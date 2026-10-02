@@ -13,7 +13,7 @@ documentation, NOT as references to the input text. For example:
 - DO NOT: start a sentence with "The text says..."
 - DO NOT: start a sentence with "One person's opinion..."
 - OK: start a sentence with "The Python standard library contains..."
-- OK: start a sentence with "GitLab security scanners..."
+- OK: start a sentence with "Static analysis tools..."
 
 Remove all information that might be considered confidential by the authors. For example:
 
