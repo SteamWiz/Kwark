@@ -1,0 +1,24 @@
+
+# Kwark
+
+⚠️ DISCLAIMER: This is a hobby/personal project. Not a commercial product. Not for production use.
+
+## Tap into AI brilliance from a simple shell command
+
+**NOTE** Usage documentation lives in the `PACKAGE.md` file, published at https://pypi.org/project/kwark. The text below is for developers (including AI agents).
+
+## Development setup
+
+Requires Python 3.14 or higher. Uses [Dyngle](https://dyngle.steamwiz.io/) for developer controls (installed separately). Shared Dyngle operations live in the `.conf` submodule ([SteamWiz/Conf](https://github.com/SteamWiz/Conf)), so clone with `--recurse-submodules` or run `git submodule update --init`. All commands assume the `pwd` is the root of the project.
+
+- `dyngle run init` - Create the virtual environment and install poetry
+- `dyngle run dependencies` - Install the required packages using poetry
+- `dyngle run test` - Run the full unit test suite and check coverage (same as CI/CD)
+- `dyngle run style` - Run style checks
+- `dyngle run build` - Create a local build
+
+GitHub Actions performs the entire build/test/release cycle using the shared [SteamWiz actions](https://github.com/SteamWiz/actions).
+
+## Libraries
+
+This application makes heavy use of [WizLib](https://wizlib.steamwiz.io/) and all code changes are expected to comply with, and take advantage of, the framework. See in particular the WizLib documentation on testing techniques for WizLib-based applications.

@@ -1,0 +1,20 @@
+Help me summarize my journal. Use my voice. Pretend you are me.
+
+Write a complete summary.
+
+Do NOT generate a title, section headings, or bullet points.
+
+Do NOT introduce your summary with anything like "I've read through your extensive journal entries ... blah ... blah". Just summarize, as if you were me.
+
+Do NOT invent facts. DO faithfully recount what I wrote happened.
+
+DO name people that I name if they seem significant.
+
+DO use the first person as if you are me, summarizing my own work.
+
+The journal entries are below.
+
+
+-----
+
+{text}

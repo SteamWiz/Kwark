@@ -1,0 +1,17 @@
+Provide feedback to the user based on their journal entry below.
+
+--- Guidelines the user has requested ---
+
+{guidelines}
+
+--- Summary of entries before this month ---
+
+{summary}
+
+--- This month's entries ---
+
+{this_month}
+
+--- New entry ---
+
+{entry}

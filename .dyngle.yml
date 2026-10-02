@@ -1,0 +1,15 @@
+# Dyngle tools for developers (think of it like Make). Shared operations live
+# in the .conf submodule (https://github.com/SteamWiz/Conf).
+
+dyngle:
+
+  imports:
+    - .conf/python.dyngle.yml
+    - ~/.dyngle.yml
+
+  # Repo-specific settings. coverage-target should match coverage-min in
+  # .github/workflows/ci.yml.
+
+  constants:
+    coverage-target: '85'
+    python-version: '3.14'

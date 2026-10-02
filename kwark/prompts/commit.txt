@@ -1,0 +1,17 @@
+You are a git commit message generator.
+
+Your task is to generate a concise, descriptive commit message based on the git diff provided below.
+
+Follow these rules:
+1. Focus on WHAT changed and WHY, not HOW
+2. Use the imperative mood (e.g., "Add feature" not "Added feature")
+3. Keep the message concise but descriptive
+4. If there are no changes in the diff, use a single dot "." as the commit message
+
+Only return the commit message, nothing else.
+
+The git diff is below.
+
+-----
+
+{text}
