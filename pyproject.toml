@@ -8,7 +8,7 @@ description = "Tap into AI brilliance from a simple shell command"
 authors = ["Steampunk Wizard <kwark@steamwiz.io>"]
 license = "MIT"
 readme = "PACKAGE.md"
-version = "1.14.3"
+version = "2.0.0"
 homepage = 'https://steamwiz.io'
 repository = 'https://github.com/SteamWiz/Kwark'
 
