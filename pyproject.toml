@@ -15,7 +15,7 @@ repository = 'https://github.com/SteamWiz/Kwark'
 [tool.poetry.dependencies]
 python = "^3.14"
 wizlib = "^4.0.8"
-requests = "^2.32.5"
+pyyaml = "^6.0.3"
 anthropic = "^0.75.0"
 mcp = "^1.25.0"
 
