@@ -159,9 +159,13 @@ class ActivateCommand(AICommand):
                     f"{self.file_path}")
                 return ""
             except Exception as e:
-                self.status = (
-                    f"Error uploading file: {e}")
-                return ""
+                # Fail the command (non-zero exit). No file was
+                # uploaded, so only MCP clients need cleaning up.
+                if hasattr(self, 'toolset') and \
+                        self.toolset:
+                    self._cleanup_mcp_clients()
+                raise RuntimeError(
+                    f"Error uploading file: {e}") from e
 
         # Query with tool support and UI feedback
         try:

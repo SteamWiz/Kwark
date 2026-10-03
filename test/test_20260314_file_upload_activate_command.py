@@ -6,6 +6,7 @@ from wizlib.test_case import WizLibTestCase
 from wizlib.config_handler import ConfigHandler
 
 from kwark import KwarkApp
+from kwark.command.activate_command import ActivateCommand
 from kwark.util import parse_yaml_input
 from kwark.ai_services.anthropic_ai_service import (
     AnthropicMessagesBlock,
@@ -244,3 +245,86 @@ class TestFileUploadActivateCommand(WizLibTestCase):
 
         c = mi.query_with_tools_ui.call_args
         self.assertIsNone(c[1].get('file_id'))
+
+    def test_activate_upload_error_fails_command(self):
+        """Upload error raises so the command exits
+        non-zero, and no query or delete happens."""
+        with patch(
+                'sys.stdin.isatty', return_value=True):
+            a = KwarkApp()
+            a.config = ConfigHandler.fake(
+                kwark_api_anthropic_key='k')
+
+        m = Mock()
+        mi = Mock()
+        mi.upload_file.side_effect = Exception(
+            'Error code: 503 - overloaded_error')
+        m.return_value = mi
+
+        with tempfile.NamedTemporaryFile(
+                mode='w', suffix='.txt',
+                delete=False) as f:
+            f.write('content')
+            fp = f.name
+
+        y = f"prompt: Summarize\nfile: {fp}"
+        try:
+            with \
+                    self.patch_stream(y), \
+                    self.patchout(), \
+                    self.patcherr(), \
+                    patch_ai_service(m):
+                with self.assertRaises(
+                        RuntimeError) as ctx:
+                    a.parse_run('activate')
+
+            self.assertIn(
+                'Error uploading file', str(ctx.exception))
+            self.assertIn('503', str(ctx.exception))
+            mi.query_with_tools_ui.assert_not_called()
+            mi.delete_file.assert_not_called()
+        finally:
+            os.unlink(fp)
+
+    def test_activate_upload_error_cleans_up_mcp(self):
+        """Upload error still cleans up MCP clients."""
+        with patch(
+                'sys.stdin.isatty', return_value=True):
+            a = KwarkApp()
+            a.config = ConfigHandler.fake(
+                kwark_api_anthropic_key='k',
+                kwark_mcp=[
+                    'python test/minimal_mcp_server.py'])
+
+        m = Mock()
+        mi = Mock()
+        mi.upload_file.side_effect = Exception(
+            'Error code: 503')
+        m.return_value = mi
+
+        with tempfile.NamedTemporaryFile(
+                mode='w', suffix='.txt',
+                delete=False) as f:
+            f.write('content')
+            fp = f.name
+
+        y = f"prompt: Summarize\nfile: {fp}"
+        real_cleanup = ActivateCommand._cleanup_mcp_clients
+        try:
+            with \
+                    self.patch_stream(y), \
+                    self.patchout(), \
+                    self.patcherr(), \
+                    patch_ai_service(m), \
+                    patch.object(
+                        ActivateCommand,
+                        '_cleanup_mcp_clients',
+                        autospec=True,
+                        side_effect=real_cleanup) as c:
+                with self.assertRaises(RuntimeError):
+                    a.parse_run('activate')
+
+            c.assert_called_once()
+            mi.query_with_tools_ui.assert_not_called()
+        finally:
+            os.unlink(fp)
