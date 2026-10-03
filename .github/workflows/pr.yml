@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   python:
-    uses: steamwiz/actions/.github/workflows/python-ci.yml@ci/split-pipeline
+    uses: steamwiz/actions/.github/workflows/python-ci.yml@v1
     with:
       python-version: '3.14'
       source-dir: kwark
