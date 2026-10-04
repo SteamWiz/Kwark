@@ -134,16 +134,75 @@ class TestExtract(TestCase):
         with self.assertRaises(SchemaValidationError):
             self.run_extract(message=message, model='claude-opus-5-5')
 
-    def test_schema_not_convertible_for_strict_tool(self):
-        for prop in [{}, {'type': ['string', 'null']}, 'x']:
-            with self.subTest(prop=prop):
-                schema = {'type': 'object', 'properties': {'a': prop}}
-                anthropic_class, _ = mock_client()
-                with patch(ANTHROPIC, anthropic_class):
-                    with self.assertRaises(KwarkAIError) as ctx:
-                        extract('text', schema, model='claude-sonnet-5-5')
-                self.assertIsNotNone(ctx.exception.__cause__)
-                anthropic_class.assert_not_called()
+    def strict_input_schema(self, schema):
+        message = fake_message([tool_block({})])
+        _, _, client = self.run_extract(
+            message=message, schema=schema, model='claude-sonnet-5-5')
+        return client.messages.create.call_args.kwargs['tools'][0][
+            'input_schema']
+
+    def test_strict_tool_keeps_enum_const_and_pattern(self):
+        properties = {
+            'category': {'type': 'string',
+                         'enum': ['invoice', 'receipt', 'letter']},
+            'kind': {'enum': ['a', 'b']},
+            'version': {'const': 1},
+            'code': {'type': 'string', 'pattern': '^[A-Z]{3}$'},
+            'title': {'type': 'string', 'description': 'Title',
+                      'format': 'date'},
+        }
+        schema = {'type': 'object', 'properties': properties}
+        sent = self.strict_input_schema(schema)
+        self.assertEqual(properties, sent['properties'])
+        self.assertIs(False, sent['additionalProperties'])
+
+    def test_strict_tool_nested_objects(self):
+        schema = {
+            'type': 'object',
+            'properties': {
+                'address': {'type': 'object',
+                            'properties': {'city': {'type': 'string'}}},
+                'lines': {'type': 'array',
+                          'items': {'type': 'object', 'properties': {}}},
+                'either': {'anyOf': [{'type': 'object', 'properties': {}},
+                                     {'type': 'null'}]},
+                'ref': {'$ref': '#/$defs/thing'},
+                'items': {'type': ['object', 'null'], 'properties': {}},
+                'anything': True,
+            },
+            '$defs': {'thing': {'type': 'object', 'properties': {}}},
+        }
+        sent = self.strict_input_schema(schema)
+        props = sent['properties']
+        self.assertIs(False, sent['additionalProperties'])
+        self.assertIs(False, props['address']['additionalProperties'])
+        self.assertEqual({'type': 'string'}, props['address']['properties'][
+            'city'])
+        self.assertIs(False, props['lines']['items']['additionalProperties'])
+        self.assertIs(False, props['either']['anyOf'][0][
+            'additionalProperties'])
+        self.assertEqual({'type': 'null'}, props['either']['anyOf'][1])
+        self.assertEqual({'$ref': '#/$defs/thing'}, props['ref'])
+        self.assertIs(False, props['items']['additionalProperties'])
+        self.assertIs(True, props['anything'])
+        self.assertIs(False, sent['$defs']['thing']['additionalProperties'])
+
+    def test_strict_tool_keeps_explicit_additional_properties(self):
+        schema = {'type': 'object', 'properties': {},
+                  'additionalProperties': {'type': 'string'}}
+        sent = self.strict_input_schema(schema)
+        self.assertEqual({'type': 'string'}, sent['additionalProperties'])
+
+    def test_strict_tool_does_not_mutate_schema(self):
+        nested = {'type': 'object', 'properties': {
+            'tags': {'type': 'array', 'items': {'enum': ['x']}}}}
+        schema = {'type': 'object', 'properties': {'n': nested}}
+        sent = self.strict_input_schema(schema)
+        self.assertNotIn('additionalProperties', schema)
+        self.assertNotIn('additionalProperties', nested)
+        sent['properties']['n']['properties']['tags']['items']['enum'].append(
+            'y')
+        self.assertEqual(['x'], nested['properties']['tags']['items']['enum'])
 
     def test_tool_input_not_a_dict(self):
         for data in ['{"category": "invoice"}', None, ['invoice']]:

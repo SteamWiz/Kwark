@@ -1,6 +1,6 @@
 """Extract structured data matching a JSON schema from text with Claude"""
 
-from anthropic import transform_schema
+from copy import deepcopy
 
 from kwark.ai.client import DEFAULT_MODEL
 from kwark.ai.client import create_client
@@ -24,26 +24,62 @@ SYSTEM_PROMPT = (
     f"schema. Base the data only on the text.")
 
 
+# Keywords whose value is a single subschema, a list of subschemas, or a
+# mapping of names to subschemas
+SUBSCHEMA_KEYWORDS = {'items', 'additionalProperties', 'not', 'contains',
+                      'if', 'then', 'else'}
+SUBSCHEMA_LIST_KEYWORDS = {'anyOf', 'allOf', 'oneOf', 'prefixItems'}
+SUBSCHEMA_MAP_KEYWORDS = {'properties', 'patternProperties', '$defs',
+                          'definitions'}
+
+
+def _is_object_schema(schema):
+    schema_type = schema.get('type')
+    if isinstance(schema_type, list):
+        return 'object' in schema_type
+    return schema_type == 'object' or (
+        schema_type is None and 'properties' in schema)
+
+
+def _strict_schema(schema):
+    """Return a copy of the schema prepared for strict tool use.
+
+    Strict mode requires additionalProperties false on every object, so it
+    is added wherever the caller didn't set it. Nothing else changes:
+    keywords such as enum, const and pattern are kept, and any keyword
+    strict mode doesn't support makes the API return an error (raised as
+    APIError) rather than being dropped. The caller's schema is not changed.
+    """
+    if isinstance(schema, list):
+        return [_strict_schema(s) for s in schema]
+    if not isinstance(schema, dict):
+        return schema
+    result = {}
+    for key, value in schema.items():
+        if key in SUBSCHEMA_KEYWORDS or key in SUBSCHEMA_LIST_KEYWORDS:
+            result[key] = _strict_schema(value)
+        elif key in SUBSCHEMA_MAP_KEYWORDS and isinstance(value, dict):
+            result[key] = {k: _strict_schema(v) for k, v in value.items()}
+        else:
+            result[key] = deepcopy(value)
+    if _is_object_schema(result):
+        result.setdefault('additionalProperties', False)
+    return result
+
+
 def _tool_arguments(schema, model):
     """Return the tools and tool_choice request arguments for the model.
 
     Models that accept it get forced tool use with the schema unchanged.
     Models that reject forced tool use get tool_choice 'auto' with a strict
-    tool, whose schema is converted to the subset strict mode supports
-    (additionalProperties false on every object, unsupported keywords moved
-    into descriptions).
+    tool, whose schema has additionalProperties false added to every object.
     """
     tool = {'name': TOOL_NAME, 'description': TOOL_DESCRIPTION}
     if supports_forced_tool_use(model):
         tool['input_schema'] = schema
         tool_choice = {'type': 'tool', 'name': TOOL_NAME}
     else:
-        try:
-            tool['input_schema'] = transform_schema(schema)
-        except (ValueError, TypeError, AttributeError, AssertionError) as e:
-            raise KwarkAIError(
-                f"schema can't be converted for strict tool use on "
-                f"{model}: {e}") from e
+        tool['input_schema'] = _strict_schema(schema)
         tool['strict'] = True
         tool_choice = {'type': 'auto'}
     return {'tools': [tool], 'tool_choice': tool_choice}
@@ -58,7 +94,10 @@ def extract(text, schema, *, instructions=None, model=DEFAULT_MODEL,
     use (see FORCED_TOOL_UNSUPPORTED_MODELS in kwark.ai.client, e.g.
     claude-sonnet-5-5 and claude-opus-5-5) get tool_choice 'auto' with a
     strict tool instead; if such a model doesn't call the tool,
-    MissingToolUseError is raised.
+    MissingToolUseError is raised. For the strict tool, additionalProperties
+    false is added to every object in a copy of the schema; other keywords
+    (including enum, const and pattern) are sent unchanged, and keywords
+    strict mode doesn't support cause an APIError.
 
     Args:
         text: The text to extract data from
