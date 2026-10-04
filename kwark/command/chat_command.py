@@ -6,7 +6,6 @@ from kwark.ai_services import AIService
 from kwark.ai_services.anthropic_ai_service import (
     AnthropicAIService, AnthropicToolset
 )
-from kwark.ai_services.mcp_client import MCPClientWrapper
 from kwark.util import parse_yaml_input, parse_mcp_servers
 from wizlib.ui import Emphasis
 
@@ -28,6 +27,8 @@ class ChatCommand(AICommand):
         """
         if not server_configs:
             return []
+
+        from kwark.ai_services.mcp_client import MCPClientWrapper
 
         clients = []
 
@@ -86,6 +87,10 @@ class ChatCommand(AICommand):
 
         # Only initialize MCP if servers present
         if all_mcp_servers:
+            # Fail clearly if the optional mcp extra is not installed
+            from kwark.ai_services.mcp_client import require_mcp
+            require_mcp()
+
             # Create event loop for MCP operations
             self.mcp_loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self.mcp_loop)

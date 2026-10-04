@@ -105,6 +105,8 @@ The optional `file:` entry specifies a path to a local file to attach to the pro
 
 Both the `chat` and `activate` commands support MCP (Model Context Protocol) servers, which provide additional tools that the AI can use to answer queries. This is how you give the AI access to real-time information, APIs, databases, and other external resources.
 
+MCP support is an optional extra. Install Kwark with `pipx install 'kwark[mcp]'` (or `pip install 'kwark[mcp]'`) to use it. If MCP servers are configured but the extra is not installed, `chat` and `activate` exit with an error explaining how to install it.
+
 ### Configuration Methods
 
 MCP servers can be configured in two ways, and servers from both sources are merged together:
@@ -278,6 +280,16 @@ Then install with `pipx`:
 ```bash
 pipx install kwark
 ```
+
+To use MCP servers with `chat` and `activate`, install the `mcp` extra instead:
+
+```bash
+pipx install 'kwark[mcp]'
+```
+
+If you already installed Kwark without the extra, reinstall it with `pipx install --force 'kwark[mcp]'`.
+
+Kwark can also be used as a Python library (`pip install kwark`); the `mcp` package and its dependencies are only installed with the extra.
 
 ## Authentication and configuration
 

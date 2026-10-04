@@ -17,6 +17,8 @@ Requires Python 3.14 or higher. Uses [Dyngle](https://dyngle.steamwiz.io/) for d
 - `dyngle run style` - Run style checks
 - `dyngle run build` - Create a local build
 
+The `mcp` package is an optional extra for users (`kwark[mcp]`), but it is also in the Poetry dev group, so `dyngle run dependencies` installs it and the test suite covers MCP. Code must not import `mcp` at module level outside `kwark/ai_services/mcp_client.py`, which guards the import so Kwark works without it.
+
 GitHub Actions performs the entire build/test/release cycle using the shared [SteamWiz actions](https://github.com/SteamWiz/actions).
 
 ## Libraries

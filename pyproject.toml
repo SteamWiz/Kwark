@@ -17,13 +17,17 @@ python = "^3.14"
 wizlib = "^4.0.8"
 pyyaml = "^6.0.3"
 anthropic = "^0.75.0"
-mcp = "^1.25.0"
+mcp = {version = "^1.25.0", optional = true}
+
+[tool.poetry.extras]
+mcp = ["mcp"]
 
 [tool.poetry.group.dev.dependencies]
 pycodestyle = "^2.11.0"
 autopep8 = "^2.0.4"
 coverage = "^7.3.0"
 pytest = "^9.0.2"
+mcp = "^1.25.0"
 
 [tool.poetry.scripts]
 kwark = "kwark:KwarkApp.main"

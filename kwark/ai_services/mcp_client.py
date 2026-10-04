@@ -1,8 +1,40 @@
-"""MCP client wrapper for stdio-based MCP server integration"""
-import asyncio
+"""MCP client wrapper for stdio-based MCP server integration
+
+The ``mcp`` package is an optional extra (``kwark[mcp]``). This module must
+remain importable without it, because WizLib's ClassFamily imports every
+module in ``kwark.ai_services``. Callers should use ``require_mcp()`` before
+connecting to MCP servers.
+"""
 from contextlib import AsyncExitStack
-from mcp import ClientSession, StdioServerParameters
-from mcp.client.stdio import stdio_client
+
+try:
+    from mcp import ClientSession, StdioServerParameters
+    from mcp.client.stdio import stdio_client
+except ImportError:
+    ClientSession = None
+    StdioServerParameters = None
+    stdio_client = None
+
+
+MCP_NOT_INSTALLED_MESSAGE = (
+    "MCP servers are configured but the 'mcp' package is not installed. "
+    "Install Kwark with MCP support: pipx install 'kwark[mcp]' "
+    "(or pip install 'kwark[mcp]')")
+
+
+class MCPNotInstalledError(RuntimeError):
+    """Raised when MCP servers are configured without the mcp package"""
+
+
+def mcp_available():
+    """Return True if the optional mcp package is installed"""
+    return stdio_client is not None
+
+
+def require_mcp():
+    """Raise MCPNotInstalledError if the optional mcp package is missing"""
+    if not mcp_available():
+        raise MCPNotInstalledError(MCP_NOT_INSTALLED_MESSAGE)
 
 
 class MCPClientWrapper:
