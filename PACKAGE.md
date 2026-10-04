@@ -267,6 +267,25 @@ kwark models
 
 **Note:** Kwark uses Claude Sonnet 5 by default. You can select a different model with `--model` (see below).
 
+## Library usage (`kwark.ai`)
+
+Other Python applications can import Kwark's library layer directly. It takes all settings as arguments (no Kwark config is read), prints nothing, and raises `kwark.ai.KwarkAIError` subclasses on failure.
+
+### Transcribe a file to Markdown
+
+```python
+from kwark.ai import transcribe, TRANSCRIBE_DISCLAIMER, KwarkAIError
+
+try:
+    markdown = transcribe('invoice.pdf')  # api_key=None uses ANTHROPIC_API_KEY
+except KwarkAIError as error:
+    print(error)
+else:
+    print(f"{TRANSCRIBE_DISCLAIMER}\n\n{markdown}")
+```
+
+Supported file types are `.pdf`, `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.txt`, `.md` and `.csv`. Optional keyword arguments are `model` (default `claude-opus-4-6`), `api_key`, `prompt` (default `TRANSCRIBE_PROMPT`) and `max_tokens` (default 32000). If the output would be truncated at `max_tokens`, `TruncatedResponseError` is raised. The disclaimer is not added to the result, so callers can add it if they want it.
+
 ## Quick installation (MacOS)
 
 If you don't already have `pipx`:

@@ -1,13 +1,13 @@
-from wizlib.app import WizApp
-from wizlib.stream_handler import StreamHandler
-from wizlib.config_handler import ConfigHandler
-from wizlib.ui_handler import UIHandler
+"""Kwark: tap into AI brilliance from a simple shell command.
 
-from kwark.command import KwarkCommand
+The CLI application class is loaded lazily (PEP 562) so that the library
+layer (``kwark.ai``) can be imported without pulling in WizLib UI code,
+the command classes or ``mcp``.
+"""
 
 
-class KwarkApp(WizApp):
-
-    base = KwarkCommand
-    name = 'kwark'
-    handlers = [StreamHandler, ConfigHandler, UIHandler]
+def __getattr__(name):
+    if name == 'KwarkApp':
+        from kwark.app import KwarkApp
+        return KwarkApp
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
