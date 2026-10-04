@@ -257,6 +257,7 @@ class TestAI(WizLibTestCase):
             a = AnthropicAIService(api_key='k')
 
             mock_content = Mock()
+            mock_content.type = "text"
             mock_content.text = "Response text"
             mock_message = Mock()
             mock_message.content = [mock_content]
