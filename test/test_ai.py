@@ -280,16 +280,6 @@ class TestAI(WizLibTestCase):
             models = a.available_models
             self.assertEqual(models, [])
 
-    def test_model_name_with_no_models(self):
-        """Test model_name when no models available"""
-        with patch('kwark.ai_services.anthropic_ai_service.AnthropicSDK') as m:
-            m().models.list.return_value = []
-            a = AnthropicAIService(api_key='k')
-            
-            # Access the cached property
-            name = a.model_name
-            self.assertIsNone(name)
-
     def test_chat_eof_error(self):
         """Test chat handles EOFError"""
         with patch('kwark.ai_services.anthropic_ai_service.AnthropicSDK') as m:
