@@ -15,3 +15,11 @@ class TruncatedResponseError(KwarkAIError):
 
 class APIError(KwarkAIError):
     """The Anthropic API call failed"""
+
+
+class MissingToolUseError(KwarkAIError):
+    """The model's response did not include the expected tool call"""
+
+
+class SchemaValidationError(KwarkAIError):
+    """The extracted data does not match the requested JSON schema"""

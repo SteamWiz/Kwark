@@ -286,6 +286,25 @@ else:
 
 Supported file types are `.pdf`, `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.txt`, `.md` and `.csv`. Optional keyword arguments are `model` (default `claude-opus-4-6`), `api_key`, `prompt` (default `TRANSCRIBE_PROMPT`) and `max_tokens` (default 32000). If the output would be truncated at `max_tokens`, `TruncatedResponseError` is raised. The disclaimer is not added to the result, so callers can add it if they want it.
 
+### Extract structured data
+
+```python
+from kwark.ai import extract
+
+schema = {
+    'type': 'object',
+    'properties': {
+        'category': {'type': 'string'},
+        'date': {'type': 'string'},
+    },
+    'required': ['category'],
+}
+record = extract(markdown, schema,
+                 instructions='Classify this document for filing.')
+```
+
+`extract()` returns a dict matching the JSON Schema (which must have `type: object`), using forced tool use. Optional keyword arguments are `instructions` (added to the system prompt), `model` (default `claude-haiku-4-5`), `api_key` and `max_tokens` (default 4096). If a `required` property is missing from the result, `SchemaValidationError` is raised; if the model doesn't call the tool, `MissingToolUseError`; if the output is truncated, `TruncatedResponseError`.
+
 ## Quick installation (MacOS)
 
 If you don't already have `pipx`:

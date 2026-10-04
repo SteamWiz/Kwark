@@ -6,8 +6,11 @@ come in as arguments, and errors are raised as ``KwarkAIError`` subclasses.
 
 from kwark.ai.errors import APIError
 from kwark.ai.errors import KwarkAIError
+from kwark.ai.errors import MissingToolUseError
+from kwark.ai.errors import SchemaValidationError
 from kwark.ai.errors import TruncatedResponseError
 from kwark.ai.errors import UnsupportedFileTypeError
+from kwark.ai.extraction import extract
 from kwark.ai.transcription import TRANSCRIBE_DISCLAIMER
 from kwark.ai.transcription import TRANSCRIBE_PROMPT
 from kwark.ai.transcription import transcribe
@@ -15,9 +18,12 @@ from kwark.ai.transcription import transcribe
 __all__ = [
     'APIError',
     'KwarkAIError',
+    'MissingToolUseError',
+    'SchemaValidationError',
     'TruncatedResponseError',
     'UnsupportedFileTypeError',
     'TRANSCRIBE_DISCLAIMER',
     'TRANSCRIBE_PROMPT',
+    'extract',
     'transcribe',
 ]
