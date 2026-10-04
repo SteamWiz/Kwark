@@ -1,9 +1,11 @@
+import os
 from collections import UserList
 from datetime import datetime
 from functools import cached_property
 
 from anthropic import Anthropic as AnthropicSDK
 
+from kwark.ai.file_types import FILE_TYPES
 from kwark.ai_services import AIService
 from wizlib.ui import Emphasis
 
@@ -21,20 +23,6 @@ SYSTEM_PROMPT_TEMPLATE = (
     " You use the {model} model. Now is {now}.\n"
 )
 FILES_API_BETA = "files-api-2025-04-14"
-EXTENSION_TYPE_MAP = {
-    # Documents
-    "pdf": "document",
-    "txt": "document",
-    "text": "document",
-    "md": "document",
-    "csv": "document",
-    # Images
-    "jpg": "image",
-    "jpeg": "image",
-    "png": "image",
-    "gif": "image",
-    "webp": "image",
-}
 
 
 def file_content_type(file_path):
@@ -47,8 +35,8 @@ def file_content_type(file_path):
         'document' or 'image' based on extension,
         defaults to 'document' for unknown extensions
     """
-    ext = file_path.rsplit(".", 1)[-1].lower()
-    return EXTENSION_TYPE_MAP.get(ext, "document")
+    suffix = os.path.splitext(file_path)[1].lower()
+    return FILE_TYPES.get(suffix, ("document",))[0]
 
 
 class AnthropicMessagesBlock(UserList):

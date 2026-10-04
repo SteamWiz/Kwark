@@ -11,6 +11,8 @@ from kwark.ai.errors import APIError
 from kwark.ai.errors import KwarkAIError
 from kwark.ai.errors import TruncatedResponseError
 from kwark.ai.errors import UnsupportedFileTypeError
+from kwark.ai.file_types import FILE_TYPES
+from kwark.ai.file_types import SUPPORTED_SUFFIXES
 
 
 TRANSCRIBE_PROMPT = (
@@ -30,49 +32,31 @@ SYSTEM_PROMPT = (
     "Markdown content itself: no preamble, no commentary and no code fence "
     "wrapping the whole document.")
 
-PDF_SUFFIXES = {'.pdf': 'application/pdf'}
-
-IMAGE_SUFFIXES = {
-    '.png': 'image/png',
-    '.jpg': 'image/jpeg',
-    '.jpeg': 'image/jpeg',
-    '.gif': 'image/gif',
-    '.webp': 'image/webp',
-}
-
-TEXT_SUFFIXES = {'.txt', '.md', '.csv'}
-
-SUPPORTED_SUFFIXES = sorted([*PDF_SUFFIXES, *IMAGE_SUFFIXES, *TEXT_SUFFIXES])
-
-
-def _base64_source(path, media_type):
-    data = base64.standard_b64encode(path.read_bytes()).decode('ascii')
-    return {'type': 'base64', 'media_type': media_type, 'data': data}
-
 
 def _file_block(path):
     """Build the content block for the file, raising UnsupportedFileTypeError
     for unsupported suffixes and KwarkAIError if the file can't be read"""
-    suffix = path.suffix.lower()
-    if suffix not in SUPPORTED_SUFFIXES:
+    file_type = FILE_TYPES.get(path.suffix.lower())
+    if file_type is None:
         raise UnsupportedFileTypeError(
             f"Unsupported file type '{path.suffix or '(none)'}' for "
             f"{path}; supported types are {', '.join(SUPPORTED_SUFFIXES)}")
+    block_type, media_type = file_type
     try:
-        if suffix in PDF_SUFFIXES:
-            return {'type': 'document',
-                    'source': _base64_source(path, PDF_SUFFIXES[suffix])}
-        if suffix in IMAGE_SUFFIXES:
-            return {'type': 'image',
-                    'source': _base64_source(path, IMAGE_SUFFIXES[suffix])}
-        # The API's plain-text document source takes raw text, not base64
-        return {'type': 'document',
-                'source': {'type': 'text', 'media_type': 'text/plain',
-                           'data': path.read_text(encoding='utf-8')}}
+        if media_type == 'text/plain':
+            # The API's plain-text document source takes raw text, not base64
+            source = {'type': 'text',
+                      'data': path.read_text(encoding='utf-8')}
+        else:
+            source = {'type': 'base64',
+                      'data': base64.standard_b64encode(
+                          path.read_bytes()).decode('ascii')}
     except UnicodeDecodeError as e:
         raise KwarkAIError(f"Unable to decode {path} as UTF-8: {e}") from e
     except OSError as e:
         raise KwarkAIError(f"Unable to read {path}: {e}") from e
+    return {'type': block_type,
+            'source': {'media_type': media_type, **source}}
 
 
 def transcribe(path, *, model='claude-opus-4-6', api_key=None,
