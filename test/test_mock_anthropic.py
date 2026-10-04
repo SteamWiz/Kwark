@@ -42,7 +42,7 @@ class TestMockAnthropicAPI(WizLibTestCase):
         
         # Check that the default model is in the list
         model_ids = [m['id'] for m in ai.available_models]
-        self.assertIn('claude-haiku-4-5-20251001', model_ids)
+        self.assertIn('claude-sonnet-5', model_ids)
 
     def test_streaming_response(self):
         """Test streaming chat response"""

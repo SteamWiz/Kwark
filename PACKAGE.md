@@ -258,12 +258,12 @@ The `models` command lists available Anthropic AI models.
 ```bash
 kwark models
 # Output:
-# - created_at: '2024-10-22'
-#   display_name: Claude 3.5 Sonnet
-#   id: claude-3-5-sonnet-20241022
+# - created_at: '2025-10-01'
+#   display_name: Claude Haiku 4.5
+#   id: claude-haiku-4-5-20251001
 ```
 
-**Note:** Kwark uses Claude 4.5 Haiku by default. You can select a different model with `--model` (see below).
+**Note:** Kwark uses Claude Sonnet 5 by default. You can select a different model with `--model` (see below).
 
 ## Quick installation (MacOS)
 
@@ -281,7 +281,7 @@ pipx install kwark
 
 ## Authentication and configuration
 
-Kwark uses Claude 4.5 Haiku through the Antropic API, and requires an API key.
+Kwark uses Claude Sonnet 5 by default through the Anthropic API, and requires an API key.
 
 There are three options for providing the API key to Kwark, in order of precedence:
 
@@ -316,7 +316,7 @@ kwark:
   model: claude-opus-4-5
 ```
 
-The `--model` command line option takes precedence over the configuration file. If neither is specified, Kwark uses Claude 4.5 Haiku. Use `kwark models` to list available model IDs.
+The `--model` command line option takes precedence over the configuration file. If neither is specified, Kwark uses Claude Sonnet 5 (`claude-sonnet-5`). Use `kwark models` to list available model IDs.
 
 ### Tool Use Limit
 

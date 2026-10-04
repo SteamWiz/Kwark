@@ -8,7 +8,11 @@ from kwark.ai_services import AIService
 from wizlib.ui import Emphasis
 
 
-DEFAULT_MODEL = 'claude-haiku-4-5-20251001'
+DEFAULT_MODEL = 'claude-sonnet-5'
+# Models that think adaptively when no `thinking` field is sent, and that
+# accept `thinking: {"type": "disabled"}` to turn it off. Matched by exact
+# model ID only, because other models (e.g. claude-sonnet-5-5) reject it.
+THINKING_DISABLE_MODELS = frozenset({'claude-sonnet-5'})
 DEFAULT_MAX_TOKENS = 64000
 DEFAULT_MAX_TOKENS_NONSTREAMING = 4096
 SYSTEM_PROMPT_TEMPLATE = (
@@ -146,12 +150,15 @@ class AnthropicAIService(AIService):
 
     def _base_arguments(self, messages: AnthropicMessagesBlock) -> dict:
         """Common API arguments for non-streaming calls."""
-        return {
+        args = {
             'model': self.model,
             'max_tokens': DEFAULT_MAX_TOKENS_NONSTREAMING,
             'system': self.system_prompt,
             'messages': messages,
         }
+        if self.model in THINKING_DISABLE_MODELS:
+            args['thinking'] = {'type': 'disabled'}
+        return args
 
     def _api_arguments(self, messages: AnthropicMessagesBlock) -> dict:
         """API arguments for streaming calls (tools + full token budget)."""
@@ -169,7 +176,10 @@ class AnthropicAIService(AIService):
         messages = AnthropicMessagesBlock()
         messages.user_says(text)
         message = self.client.messages.create(**self._base_arguments(messages))
-        return message.content[0].text
+        for content in message.content:
+            if content.type == 'text':
+                return content.text
+        return ""
 
     def _execute_tool(self, tool_name, tool_input):
         """Execute a tool (MCP or local) and return result.

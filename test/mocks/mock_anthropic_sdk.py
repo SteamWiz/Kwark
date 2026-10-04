@@ -17,7 +17,7 @@ class MockMessage:
     def __init__(self, text="Mock response", role="assistant"):
         self.role = role
         self.content = [MockTextBlock(text)]
-        self.model = "claude-haiku-4-5-20251001"
+        self.model = "claude-sonnet-5"
         self.stop_reason = "end_turn"
         self.usage = {"input_tokens": 10, "output_tokens": 20}
 
@@ -74,6 +74,11 @@ class MockModels:
     
     def __init__(self):
         self.available_models = [
+            MockModel(
+                "claude-sonnet-5",
+                "Claude Sonnet 5",
+                "2026-01-01T00:00:00Z"
+            ),
             MockModel(
                 "claude-haiku-4-5-20251001",
                 "Claude 4.5 Haiku",
