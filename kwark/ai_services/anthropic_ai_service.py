@@ -117,10 +117,9 @@ class AnthropicAIService(AIService):
             self.client = AnthropicSDK(api_key=api_key)
         else:
             self.client = AnthropicSDK()
-        # self.available_models = self._fetch_available_models()
         self.model = DEFAULT_MODEL if model is None else model
         self.system_prompt = SYSTEM_PROMPT_TEMPLATE.format(
-            model=self.model_name, now=datetime.now())
+            model=self.model, now=datetime.now())
         # Support injecting toolset for MCP integration
         self.toolset = toolset if toolset else AnthropicToolset()
         # Event loop for MCP operations (injected by chat command)
@@ -142,11 +141,6 @@ class AnthropicAIService(AIService):
         except Exception as e:
             print(f"Error fetching models: {e}")
             return []
-
-    @cached_property
-    def model_name(self):
-        return next((m['display_name'] for m in self.available_models
-                     if m['id'] == self.model), None)
 
     def _base_arguments(self, messages: AnthropicMessagesBlock) -> dict:
         """Common API arguments for non-streaming calls."""

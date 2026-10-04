@@ -138,7 +138,9 @@ class MockAnthropicSDK(Mock):
             ai.client.models.available_models = [
                 MockModel('test-model', 'Test Model'),
             ]
-            ai.available_models = ai._fetch_available_models()
+            # available_models is a cached_property: set the mock list
+            # before first access, which calls client.models.list()
+            models = ai.available_models
     """
 
     def __init__(self, *args, **kwargs):
