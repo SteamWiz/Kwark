@@ -286,6 +286,27 @@ else:
 
 Supported file types are `.pdf`, `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.txt`, `.md` and `.csv`. Optional keyword arguments are `model` (default `claude-opus-4-6`), `api_key`, `prompt` (default `TRANSCRIBE_PROMPT`) and `max_tokens` (default 32000). If the output would be truncated at `max_tokens`, `TruncatedResponseError` is raised. The disclaimer is not added to the result, so callers can add it if they want it.
 
+### Extract structured data
+
+```python
+from kwark.ai import extract
+
+schema = {
+    'type': 'object',
+    'properties': {
+        'category': {'type': 'string'},
+        'date': {'type': 'string'},
+    },
+    'required': ['category'],
+}
+record = extract(markdown, schema,
+                 instructions='Classify this document for filing.')
+```
+
+`extract()` returns a dict matching the JSON Schema (which must have `type: object`), using forced tool use for most models (see below for the exceptions). Optional keyword arguments are `instructions` (added to the system prompt), `model` (default `claude-sonnet-5`), `api_key` and `max_tokens` (default 4096, including any thinking). If a `required` property is missing from the result, `SchemaValidationError` is raised; if the model doesn't call the tool, `MissingToolUseError`; if the output is truncated, `TruncatedResponseError`.
+
+Claude Opus 5.5, Sonnet 5.5, Fable 5.1 and Mythos 5.1 reject forced tool use. For these models `extract()` lets the model choose (`tool_choice: auto`) and marks the tool `strict`, so the API constrains the tool input to the schema. Strict mode requires `additionalProperties: false` on every object, so `extract()` adds it to a copy of the schema wherever it isn't set. Nothing else is changed: keywords such as `enum`, `const` and `pattern` reach the API and are enforced. Strict mode supports only a subset of JSON Schema; a schema that uses an unsupported keyword (such as `minimum`) gets an API error, raised as `APIError`. If the model doesn't call the tool, `MissingToolUseError` is raised.
+
 ## Quick installation (MacOS)
 
 If you don't already have `pipx`:

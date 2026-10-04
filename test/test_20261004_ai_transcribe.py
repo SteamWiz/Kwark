@@ -22,7 +22,7 @@ from kwark.ai import UnsupportedFileTypeError
 from kwark.ai import transcribe
 
 
-ANTHROPIC = 'kwark.ai.transcription.Anthropic'
+ANTHROPIC = 'kwark.ai.client.Anthropic'
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 

@@ -4,10 +4,8 @@ import base64
 import os
 from pathlib import Path
 
-import anthropic
-from anthropic import Anthropic
-
-from kwark.ai.errors import APIError
+from kwark.ai.client import create_client
+from kwark.ai.client import wrap_api_errors
 from kwark.ai.errors import KwarkAIError
 from kwark.ai.errors import TruncatedResponseError
 from kwark.ai.errors import UnsupportedFileTypeError
@@ -85,19 +83,12 @@ def transcribe(path, *, model='claude-opus-4-6', api_key=None,
     file_block = _file_block(path)
     messages = [{'role': 'user', 'content': [
         file_block, {'type': 'text', 'text': prompt}]}]
-    try:
-        client = Anthropic(api_key=api_key)
-        if client.api_key is None and client.auth_token is None:
-            raise APIError(
-                "No Anthropic API key: pass api_key or set "
-                "ANTHROPIC_API_KEY")
+    with wrap_api_errors(f'transcribing {path}'):
+        client = create_client(api_key)
         with client.messages.stream(model=model, max_tokens=max_tokens,
                                     system=SYSTEM_PROMPT,
                                     messages=messages) as stream:
             message = stream.get_final_message()
-    except anthropic.AnthropicError as e:
-        raise APIError(
-            f"Anthropic API error transcribing {path}: {e}") from e
     if message.stop_reason == 'max_tokens':
         raise TruncatedResponseError(
             f"Transcription of {path} was truncated at max_tokens="
