@@ -1,4 +1,4 @@
-from . import KwarkApp
+from kwark.app import KwarkApp
 
 if __name__ == '__main__':  # pragma: nocover
     KwarkApp.main()
