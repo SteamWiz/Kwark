@@ -78,7 +78,7 @@ class TestExtract(TestCase):
         anthropic_class.assert_called_once_with(api_key=None)
         kwargs = client.messages.create.call_args.kwargs
         self.assertEqual('claude-sonnet-5', kwargs['model'])
-        self.assertEqual({'type': 'disabled'}, kwargs['thinking'])
+        self.assertNotIn('thinking', kwargs)
         self.assertEqual(4096, kwargs['max_tokens'])
         self.assertNotIn('Kwark', kwargs['system'])
         client.models.list.assert_not_called()
@@ -93,6 +93,64 @@ class TestExtract(TestCase):
         self.assertNotIn('thinking', kwargs)
         self.assertEqual(300, kwargs['max_tokens'])
         self.assertIn('Classify the document.', kwargs['system'])
+
+    def test_forced_tool_not_strict(self):
+        _, _, client = self.run_extract()
+        tool = client.messages.create.call_args.kwargs['tools'][0]
+        self.assertNotIn('strict', tool)
+
+    def test_auto_strict_tool_for_models_rejecting_forced_tool_use(self):
+        for model in ['claude-opus-5-5', 'claude-sonnet-5-5',
+                      'claude-fable-5-1', 'claude-mythos-5-1']:
+            with self.subTest(model=model):
+                result, _, client = self.run_extract(model=model)
+                kwargs = client.messages.create.call_args.kwargs
+                self.assertEqual(model, kwargs['model'])
+                self.assertEqual({'type': 'auto'}, kwargs['tool_choice'])
+                self.assertNotIn('thinking', kwargs)
+                self.assertEqual(1, len(kwargs['tools']))
+                tool = kwargs['tools'][0]
+                self.assertIs(True, tool['strict'])
+                self.assertEqual(
+                    {'type': 'object',
+                     'properties': {'category': {'type': 'string'},
+                                    'amount': {'type': 'number'},
+                                    'note': {'type': 'string'}},
+                     'additionalProperties': False,
+                     'required': ['category', 'amount']},
+                    tool['input_schema'])
+                self.assertNotIn('additionalProperties', SCHEMA)
+                self.assertEqual(
+                    {'category': 'invoice', 'amount': 12.5}, result)
+
+    def test_auto_strict_tool_not_called(self):
+        message = fake_message(
+            [SimpleNamespace(type='text', text='No')], stop_reason='end_turn')
+        with self.assertRaises(MissingToolUseError):
+            self.run_extract(message=message, model='claude-sonnet-5-5')
+
+    def test_auto_strict_tool_missing_required_property(self):
+        message = fake_message([tool_block({'category': 'invoice'})])
+        with self.assertRaises(SchemaValidationError):
+            self.run_extract(message=message, model='claude-opus-5-5')
+
+    def test_schema_not_convertible_for_strict_tool(self):
+        for prop in [{}, {'type': ['string', 'null']}, 'x']:
+            with self.subTest(prop=prop):
+                schema = {'type': 'object', 'properties': {'a': prop}}
+                anthropic_class, _ = mock_client()
+                with patch(ANTHROPIC, anthropic_class):
+                    with self.assertRaises(KwarkAIError) as ctx:
+                        extract('text', schema, model='claude-sonnet-5-5')
+                self.assertIsNotNone(ctx.exception.__cause__)
+                anthropic_class.assert_not_called()
+
+    def test_tool_input_not_a_dict(self):
+        for data in ['{"category": "invoice"}', None, ['invoice']]:
+            with self.subTest(data=data):
+                message = fake_message([tool_block(data)])
+                with self.assertRaises(SchemaValidationError):
+                    self.run_extract(message=message)
 
     def test_no_instructions_in_system(self):
         _, _, client = self.run_extract()

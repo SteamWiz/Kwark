@@ -1,8 +1,10 @@
 """Extract structured data matching a JSON schema from text with Claude"""
 
+from anthropic import transform_schema
+
 from kwark.ai.client import DEFAULT_MODEL
 from kwark.ai.client import create_client
-from kwark.ai.client import thinking_arguments
+from kwark.ai.client import supports_forced_tool_use
 from kwark.ai.client import wrap_api_errors
 from kwark.ai.errors import KwarkAIError
 from kwark.ai.errors import MissingToolUseError
@@ -22,12 +24,41 @@ SYSTEM_PROMPT = (
     f"schema. Base the data only on the text.")
 
 
+def _tool_arguments(schema, model):
+    """Return the tools and tool_choice request arguments for the model.
+
+    Models that accept it get forced tool use with the schema unchanged.
+    Models that reject forced tool use get tool_choice 'auto' with a strict
+    tool, whose schema is converted to the subset strict mode supports
+    (additionalProperties false on every object, unsupported keywords moved
+    into descriptions).
+    """
+    tool = {'name': TOOL_NAME, 'description': TOOL_DESCRIPTION}
+    if supports_forced_tool_use(model):
+        tool['input_schema'] = schema
+        tool_choice = {'type': 'tool', 'name': TOOL_NAME}
+    else:
+        try:
+            tool['input_schema'] = transform_schema(schema)
+        except (ValueError, TypeError, AttributeError, AssertionError) as e:
+            raise KwarkAIError(
+                f"schema can't be converted for strict tool use on "
+                f"{model}: {e}") from e
+        tool['strict'] = True
+        tool_choice = {'type': 'auto'}
+    return {'tools': [tool], 'tool_choice': tool_choice}
+
+
 def extract(text, schema, *, instructions=None, model=DEFAULT_MODEL,
             api_key=None, max_tokens=4096):
     """Extract structured data from text with Claude.
 
-    Uses forced tool use: the schema becomes the input schema of a single
-    tool that the model must call.
+    The schema becomes the input schema of a single tool. Most models are
+    forced to call it (tool_choice 'tool'). Models that reject forced tool
+    use (see FORCED_TOOL_UNSUPPORTED_MODELS in kwark.ai.client, e.g.
+    claude-sonnet-5-5 and claude-opus-5-5) get tool_choice 'auto' with a
+    strict tool instead; if such a model doesn't call the tool,
+    MissingToolUseError is raised.
 
     Args:
         text: The text to extract data from
@@ -36,7 +67,7 @@ def extract(text, schema, *, instructions=None, model=DEFAULT_MODEL,
         model: Anthropic model ID (default DEFAULT_MODEL, Claude Sonnet 5)
         api_key: Anthropic API key; None uses the SDK default
             (ANTHROPIC_API_KEY)
-        max_tokens: Maximum output tokens
+        max_tokens: Maximum output tokens, including any thinking
 
     Returns:
         A dict matching the schema
@@ -45,7 +76,8 @@ def extract(text, schema, *, instructions=None, model=DEFAULT_MODEL,
         KwarkAIError: the schema is not a JSON Schema object
         TruncatedResponseError: the output hit max_tokens
         MissingToolUseError: the response had no call to the tool
-        SchemaValidationError: a required property is missing
+        SchemaValidationError: the tool input is not an object, or a
+            required property is missing
         APIError: the Anthropic API call failed
     """
     if not isinstance(schema, dict) or schema.get('type') != 'object':
@@ -54,17 +86,13 @@ def extract(text, schema, *, instructions=None, model=DEFAULT_MODEL,
     system = SYSTEM_PROMPT
     if instructions:
         system = f"{system}\n\n{instructions}"
-    # Forced tool use is incompatible with thinking, so turn it off for
-    # models that would otherwise think
+    tool_arguments = _tool_arguments(schema, model)
     with wrap_api_errors('extracting data'):
         client = create_client(api_key)
         message = client.messages.create(
             model=model, max_tokens=max_tokens, system=system,
-            tools=[{'name': TOOL_NAME, 'description': TOOL_DESCRIPTION,
-                    'input_schema': schema}],
-            tool_choice={'type': 'tool', 'name': TOOL_NAME},
             messages=[{'role': 'user', 'content': text}],
-            **thinking_arguments(model))
+            **tool_arguments)
     if message.stop_reason == 'max_tokens':
         raise TruncatedResponseError(
             f"Extraction was truncated at max_tokens={max_tokens}; "
@@ -74,6 +102,10 @@ def extract(text, schema, *, instructions=None, model=DEFAULT_MODEL,
     if block is None:
         raise MissingToolUseError(
             f"The response did not call the {TOOL_NAME} tool")
+    if not isinstance(block.input, dict):
+        raise SchemaValidationError(
+            f"Extracted data is not an object: "
+            f"{type(block.input).__name__}")
     result = dict(block.input)
     missing = [k for k in schema.get('required', []) if k not in result]
     if missing:
