@@ -1,9 +1,9 @@
 """Extract structured data matching a JSON schema from text with Claude"""
 
-import anthropic
-from anthropic import Anthropic
-
-from kwark.ai.errors import APIError
+from kwark.ai.client import DEFAULT_MODEL
+from kwark.ai.client import create_client
+from kwark.ai.client import thinking_arguments
+from kwark.ai.client import wrap_api_errors
 from kwark.ai.errors import KwarkAIError
 from kwark.ai.errors import MissingToolUseError
 from kwark.ai.errors import SchemaValidationError
@@ -22,7 +22,7 @@ SYSTEM_PROMPT = (
     f"schema. Base the data only on the text.")
 
 
-def extract(text, schema, *, instructions=None, model='claude-haiku-4-5',
+def extract(text, schema, *, instructions=None, model=DEFAULT_MODEL,
             api_key=None, max_tokens=4096):
     """Extract structured data from text with Claude.
 
@@ -33,7 +33,7 @@ def extract(text, schema, *, instructions=None, model='claude-haiku-4-5',
         text: The text to extract data from
         schema: JSON Schema dict describing the result (type 'object')
         instructions: Optional task description added to the system prompt
-        model: Anthropic model ID
+        model: Anthropic model ID (default DEFAULT_MODEL, Claude Sonnet 5)
         api_key: Anthropic API key; None uses the SDK default
             (ANTHROPIC_API_KEY)
         max_tokens: Maximum output tokens
@@ -54,20 +54,17 @@ def extract(text, schema, *, instructions=None, model='claude-haiku-4-5',
     system = SYSTEM_PROMPT
     if instructions:
         system = f"{system}\n\n{instructions}"
-    try:
-        client = Anthropic(api_key=api_key)
-        if client.api_key is None and client.auth_token is None:
-            raise APIError(
-                "No Anthropic API key: pass api_key or set "
-                "ANTHROPIC_API_KEY")
+    # Forced tool use is incompatible with thinking, so turn it off for
+    # models that would otherwise think
+    with wrap_api_errors('extracting data'):
+        client = create_client(api_key)
         message = client.messages.create(
             model=model, max_tokens=max_tokens, system=system,
             tools=[{'name': TOOL_NAME, 'description': TOOL_DESCRIPTION,
                     'input_schema': schema}],
             tool_choice={'type': 'tool', 'name': TOOL_NAME},
-            messages=[{'role': 'user', 'content': text}])
-    except anthropic.AnthropicError as e:
-        raise APIError(f"Anthropic API error extracting data: {e}") from e
+            messages=[{'role': 'user', 'content': text}],
+            **thinking_arguments(model))
     if message.stop_reason == 'max_tokens':
         raise TruncatedResponseError(
             f"Extraction was truncated at max_tokens={max_tokens}; "

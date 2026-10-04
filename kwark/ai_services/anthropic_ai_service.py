@@ -5,16 +5,13 @@ from functools import cached_property
 
 from anthropic import Anthropic as AnthropicSDK
 
+from kwark.ai.client import DEFAULT_MODEL
+from kwark.ai.client import thinking_arguments
 from kwark.ai.file_types import FILE_TYPES
 from kwark.ai_services import AIService
 from wizlib.ui import Emphasis
 
 
-DEFAULT_MODEL = 'claude-sonnet-5'
-# Models that think adaptively when no `thinking` field is sent, and that
-# accept `thinking: {"type": "disabled"}` to turn it off. Matched by exact
-# model ID only, because other models (e.g. claude-sonnet-5-5) reject it.
-THINKING_DISABLE_MODELS = frozenset({'claude-sonnet-5'})
 DEFAULT_MAX_TOKENS = 64000
 DEFAULT_MAX_TOKENS_NONSTREAMING = 4096
 SYSTEM_PROMPT_TEMPLATE = (
@@ -137,9 +134,8 @@ class AnthropicAIService(AIService):
             'max_tokens': DEFAULT_MAX_TOKENS_NONSTREAMING,
             'system': self.system_prompt,
             'messages': messages,
+            **thinking_arguments(self.model),
         }
-        if self.model in THINKING_DISABLE_MODELS:
-            args['thinking'] = {'type': 'disabled'}
         return args
 
     def _api_arguments(self, messages: AnthropicMessagesBlock) -> dict:

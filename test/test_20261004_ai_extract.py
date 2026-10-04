@@ -16,7 +16,7 @@ from kwark.ai import TruncatedResponseError
 from kwark.ai import extract
 
 
-ANTHROPIC = 'kwark.ai.extraction.Anthropic'
+ANTHROPIC = 'kwark.ai.client.Anthropic'
 
 SCHEMA = {
     'type': 'object',
@@ -77,7 +77,8 @@ class TestExtract(TestCase):
         _, anthropic_class, client = self.run_extract()
         anthropic_class.assert_called_once_with(api_key=None)
         kwargs = client.messages.create.call_args.kwargs
-        self.assertEqual('claude-haiku-4-5', kwargs['model'])
+        self.assertEqual('claude-sonnet-5', kwargs['model'])
+        self.assertEqual({'type': 'disabled'}, kwargs['thinking'])
         self.assertEqual(4096, kwargs['max_tokens'])
         self.assertNotIn('Kwark', kwargs['system'])
         client.models.list.assert_not_called()
@@ -89,6 +90,7 @@ class TestExtract(TestCase):
         anthropic_class.assert_called_once_with(api_key='sk-test')
         kwargs = client.messages.create.call_args.kwargs
         self.assertEqual('claude-x', kwargs['model'])
+        self.assertNotIn('thinking', kwargs)
         self.assertEqual(300, kwargs['max_tokens'])
         self.assertIn('Classify the document.', kwargs['system'])
 

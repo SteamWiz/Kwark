@@ -303,7 +303,7 @@ record = extract(markdown, schema,
                  instructions='Classify this document for filing.')
 ```
 
-`extract()` returns a dict matching the JSON Schema (which must have `type: object`), using forced tool use. Optional keyword arguments are `instructions` (added to the system prompt), `model` (default `claude-haiku-4-5`), `api_key` and `max_tokens` (default 4096). If a `required` property is missing from the result, `SchemaValidationError` is raised; if the model doesn't call the tool, `MissingToolUseError`; if the output is truncated, `TruncatedResponseError`.
+`extract()` returns a dict matching the JSON Schema (which must have `type: object`), using forced tool use. Optional keyword arguments are `instructions` (added to the system prompt), `model` (default `claude-sonnet-5`, with thinking disabled because forced tool use does not allow it), `api_key` and `max_tokens` (default 4096). If a `required` property is missing from the result, `SchemaValidationError` is raised; if the model doesn't call the tool, `MissingToolUseError`; if the output is truncated, `TruncatedResponseError`.
 
 ## Quick installation (MacOS)
 
