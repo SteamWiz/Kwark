@@ -13,6 +13,7 @@ And several convenience commands:
 - `doc`: Summarize discussions for technical documentation
 - `branch`: Generate git branch names
 - `commit`: Generate git commit messages
+- `transcribe`: Transcribe a file (PDF, image or text) to Markdown
 - `models`: List available Anthropic AI models
 - `journal`: AI-assisted personal journal
 
@@ -202,6 +203,24 @@ git add .
 git commit -m "$(git diff --staged | kwark commit)"
 ```
 
+### Transcribe Command
+
+The `transcribe` command transcribes a file (PDF, image or text) to Markdown and writes it to standard output, so it can be redirected to a file.
+
+```bash
+kwark transcribe statement.pdf > statement.pdf.md
+```
+
+The output starts with an HTML comment containing a disclaimer (the AI may make errors, and tables and other structured data are converted to YAML), then a blank line, then the Markdown. Use `--no-disclaimer` to leave the comment out:
+
+```bash
+kwark transcribe receipt.jpg --no-disclaimer
+```
+
+Supported file types are `.pdf`, `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.txt`, `.md` and `.csv`. If the file type is unsupported, the file can't be read, the output is truncated or the API call fails, the error is written to standard error and the command exits with a non-zero status.
+
+The `transcribe` command uses Claude Opus 4.6 (`claude-opus-4-6`) by default. To change it, use `--model` (`-m`) or set `kwark-transcribe-model` in your configuration file. The general `kwark-model` setting does not apply to `transcribe` (see [Model selection](#model-selection)).
+
 ### Journal Command
 
 The `journal` command helps you maintain a personal journal with
@@ -354,7 +373,7 @@ kwark:
 
 ### Model selection
 
-All AI commands (`chat`, `activate`, `doc`, `branch`, `commit`, `journal`) accept a `--model` (`-m`) option to designate the Anthropic model to use:
+All AI commands (`chat`, `activate`, `doc`, `branch`, `commit`, `journal`, `transcribe`) accept a `--model` (`-m`) option to designate the Anthropic model to use:
 
 ```bash
 git diff --staged | kwark commit --model claude-opus-4-5
@@ -369,6 +388,14 @@ kwark:
 ```
 
 The `--model` command line option takes precedence over the configuration file. If neither is specified, Kwark uses Claude Sonnet 5 (`claude-sonnet-5`). Use `kwark models` to list available model IDs.
+
+The `transcribe` command has its own setting and default. It uses `--model` first, then `transcribe: model:` (`kwark-transcribe-model`) from the configuration file, then Claude Opus 4.6 (`claude-opus-4-6`). It ignores the general `model` setting.
+
+```yaml
+kwark:
+  transcribe:
+    model: claude-opus-4-5
+```
 
 ### Tool Use Limit
 
