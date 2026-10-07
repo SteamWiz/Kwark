@@ -14,6 +14,7 @@ And several convenience commands:
 - `branch`: Generate git branch names
 - `commit`: Generate git commit messages
 - `transcribe`: Transcribe a file (PDF, image or text) to Markdown
+- `extract`: Extract structured data from text as YAML, using a JSON Schema
 - `models`: List available Anthropic AI models
 - `journal`: AI-assisted personal journal
 
@@ -221,6 +222,43 @@ Supported file types are `.pdf`, `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.txt
 
 The `transcribe` command uses Claude Opus 4.6 (`claude-opus-4-6`) by default. To change it, use `--model` (`-m`) or set `kwark-transcribe-model` in your configuration file. The general `kwark-model` setting does not apply to `transcribe` (see [Model selection](#model-selection)).
 
+### Extract Command
+
+The `extract` command reads text from standard input, extracts structured data from it according to a JSON Schema, and writes the result to standard output as YAML. It is designed for shell pipelines and Dyngle operations.
+
+```bash
+cat note.md | kwark extract -S schema.yaml -i 'Extract the sender and the amount due'
+```
+
+Options:
+
+- `--schema` (`-S`, required): path to a file containing the JSON Schema, written in YAML or JSON. The top-level schema must be a mapping with `type: object`.
+- `--instructions` (`-i`): optional instructions describing the task, added to the system prompt.
+- `--model` (`-m`): the model to use (see below).
+
+For example, with this `schema.yaml`:
+
+```yaml
+type: object
+properties:
+  sender:
+    type: string
+  amount:
+    type: number
+required: [sender, amount]
+```
+
+the output looks like:
+
+```yaml
+sender: Acme Utilities
+amount: 82.5
+```
+
+If the schema file is missing, unreadable, not valid YAML/JSON or not a mapping, the input is empty, or the extraction or API call fails, the error is written to standard error, nothing is written to standard output and the command exits with a non-zero status.
+
+The `extract` command uses Claude Haiku 4.5 (`claude-haiku-4-5`) by default. To change it, use `--model` (`-m`) or set `kwark-extract-model` in your configuration file. The general `kwark-model` setting does not apply to `extract` (see [Model selection](#model-selection)).
+
 ### Journal Command
 
 The `journal` command helps you maintain a personal journal with
@@ -373,7 +411,7 @@ kwark:
 
 ### Model selection
 
-All AI commands (`chat`, `activate`, `doc`, `branch`, `commit`, `journal`, `transcribe`) accept a `--model` (`-m`) option to designate the Anthropic model to use:
+All AI commands (`chat`, `activate`, `doc`, `branch`, `commit`, `journal`, `transcribe`, `extract`) accept a `--model` (`-m`) option to designate the Anthropic model to use:
 
 ```bash
 git diff --staged | kwark commit --model claude-opus-4-5
@@ -395,6 +433,14 @@ The `transcribe` command has its own setting and default. It uses `--model` firs
 kwark:
   transcribe:
     model: claude-opus-4-5
+```
+
+The `extract` command works the same way with its own setting and default: `--model` first, then `extract: model:` (`kwark-extract-model`) from the configuration file, then Claude Haiku 4.5 (`claude-haiku-4-5`). It also ignores the general `model` setting.
+
+```yaml
+kwark:
+  extract:
+    model: claude-sonnet-5
 ```
 
 ### Tool Use Limit
