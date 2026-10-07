@@ -25,6 +25,10 @@ class KwarkCommand(WizCommand):
 class AICommand(KwarkCommand):
     """Base class for commands that perform AI messaging."""
 
+    # Model used when neither --model nor config designates one. None means
+    # the AI service default. Override per command.
+    default_model = None
+
     @classmethod
     def add_args(cls, parser: WizParser):
         super().add_args(parser)
@@ -34,7 +38,7 @@ class AICommand(KwarkCommand):
         super().handle_vals()
         if not self.provided('model'):
             self.model = (
-                self.app.config.get('kwark-model') or None
+                self.app.config.get('kwark-model') or self.default_model
             )
 
     @cached_property
