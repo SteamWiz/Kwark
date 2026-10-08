@@ -1,5 +1,5 @@
 import kwark.ai
-from kwark.command import AICommand
+from kwark.command import AICommand, KwarkUsageError
 from wizlib.parser import WizParser
 
 
@@ -18,10 +18,14 @@ class TranscribeCommand(AICommand):
     @classmethod
     def add_args(cls, parser: WizParser):
         super().add_args(parser)
-        parser.add_argument('file')
+        # Optional for argparse so that 'kwark transcribe --help' works;
+        # checked in handle_vals (see KwarkUsageError)
+        parser.add_argument('file', nargs='?')
         parser.add_argument('--no-disclaimer', action='store_true')
 
     def handle_vals(self):
+        if not self.provided('file'):
+            raise KwarkUsageError('A file to transcribe is required')
         # Check before super(), which fills model from the general kwark-model
         model_provided = self.provided('model')
         super().handle_vals()
