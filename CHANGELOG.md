@@ -2,6 +2,15 @@
 
 <!-- version list -->
 
+## v3.0.1 (2026-10-08)
+
+### Bug Fixes
+
+- Make transcribe and extract --help work in the CLI
+  ([#24](https://github.com/SteamWiz/Kwark/pull/24),
+  [`0742ffc`](https://github.com/SteamWiz/Kwark/commit/0742ffc78c68c1c474b85bfe1c9965a5d7dfdb37))
+
+
 ## v3.0.0 (2026-10-07)
 
 ### Bug Fixes
