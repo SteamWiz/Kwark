@@ -2,7 +2,7 @@ import yaml
 
 import kwark.ai
 from kwark.ai import KwarkAIError
-from kwark.command import AICommand
+from kwark.command import AICommand, KwarkUsageError
 from wizlib.parser import WizParser
 
 
@@ -21,10 +21,14 @@ class ExtractCommand(AICommand):
     @classmethod
     def add_args(cls, parser: WizParser):
         super().add_args(parser)
-        parser.add_argument('--schema', '-S', required=True)
+        # Not required=True so that 'kwark extract --help' works; checked in
+        # handle_vals (see KwarkUsageError)
+        parser.add_argument('--schema', '-S')
         parser.add_argument('--instructions', '-i')
 
     def handle_vals(self):
+        if not self.provided('schema'):
+            raise KwarkUsageError('--schema/-S is required')
         # Check before super(), which fills model from the general kwark-model
         model_provided = self.provided('model')
         super().handle_vals()

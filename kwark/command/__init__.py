@@ -5,6 +5,14 @@ from wizlib.parser import WizParser
 from kwark.ai_services import AIService
 
 
+class KwarkUsageError(Exception):
+    """A missing or invalid command-line argument. Raised from handle_vals
+    instead of making an argument required in argparse: WizLib's --help still
+    enforces required arguments, and its fallback to the default command then
+    reports a misleading 'unrecognized arguments' error. WizApp.start prints
+    this to stderr and exits with status 1."""
+
+
 class KwarkCommand(WizCommand):
 
     default = 'null'
