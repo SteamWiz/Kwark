@@ -44,8 +44,13 @@ class TestCommandHelp(WizLibTestCase):
 
     def test_all_commands_present(self):
         names = self._names()
-        for name in ['transcribe', 'extract', 'chat', 'journal']:
+        for name in ['extract', 'chat', 'journal']:
             self.assertIn(name, names)
+
+    def test_transcribe_command_removed(self):
+        # The CLI command moved to 'filez4eva transcribe' (issue #26); the
+        # kwark.ai.transcribe library function remains
+        self.assertNotIn('transcribe', self._names())
 
     def test_help_for_every_command(self):
         for name in self._names():
@@ -57,25 +62,10 @@ class TestCommandHelp(WizLibTestCase):
                     self.assertNotIn('unrecognized arguments', out + err)
                     self.assertEqual('', err)
 
-    def test_transcribe_help_shows_arguments(self):
-        _, out, _ = self._start('transcribe', '--help')
-        self.assertIn('file', out)
-        self.assertIn('--no-disclaimer', out)
-
     def test_extract_help_shows_arguments(self):
         _, out, _ = self._start('extract', '--help')
         self.assertIn('--schema', out)
         self.assertIn('--instructions', out)
-
-    def test_transcribe_missing_file(self):
-        m = Mock()
-        with patch('kwark.ai.transcribe', m):
-            code, out, err = self._start('transcribe')
-        self.assertEqual(1, code)
-        self.assertIn('A file to transcribe is required', err)
-        self.assertNotIn('unrecognized arguments', err)
-        self.assertEqual('', out)
-        m.assert_not_called()
 
     def test_extract_missing_schema(self):
         m = Mock()

@@ -13,7 +13,6 @@ And several convenience commands:
 - `doc`: Summarize discussions for technical documentation
 - `branch`: Generate git branch names
 - `commit`: Generate git commit messages
-- `transcribe`: Transcribe a file (PDF, image or text) to Markdown
 - `extract`: Extract structured data from text as YAML, using a JSON Schema
 - `models`: List available Anthropic AI models
 - `journal`: AI-assisted personal journal
@@ -204,24 +203,6 @@ git add .
 git commit -m "$(git diff --staged | kwark commit)"
 ```
 
-### Transcribe Command
-
-The `transcribe` command transcribes a file (PDF, image or text) to Markdown and writes it to standard output, so it can be redirected to a file.
-
-```bash
-kwark transcribe statement.pdf > statement.pdf.md
-```
-
-The output starts with an HTML comment containing a disclaimer (the AI may make errors, and tables and other structured data are converted to YAML), then a blank line, then the Markdown. Use `--no-disclaimer` to leave the comment out:
-
-```bash
-kwark transcribe receipt.jpg --no-disclaimer
-```
-
-Supported file types are `.pdf`, `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.txt`, `.md` and `.csv`. If the file type is unsupported, the file can't be read, the output is truncated or the API call fails, the error is written to standard error and the command exits with a non-zero status.
-
-The `transcribe` command uses Claude Opus 4.6 (`claude-opus-4-6`) by default. To change it, use `--model` (`-m`) or set `kwark-transcribe-model` in your configuration file. The general `kwark-model` setting does not apply to `transcribe` (see [Model selection](#model-selection)).
-
 ### Extract Command
 
 The `extract` command reads text from standard input, extracts structured data from it according to a JSON Schema, and writes the result to standard output as YAML. It is designed for shell pipelines and Dyngle operations.
@@ -343,6 +324,8 @@ else:
 
 Supported file types are `.pdf`, `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.txt`, `.md` and `.csv`. Optional keyword arguments are `model` (default `claude-opus-4-6`), `api_key`, `prompt` (default `TRANSCRIBE_PROMPT`) and `max_tokens` (default 32000). If the output would be truncated at `max_tokens`, `TruncatedResponseError` is raised. The disclaimer is not added to the result, so callers can add it if they want it.
 
+Kwark no longer has a `kwark transcribe` command. To transcribe from the command line, use `filez4eva transcribe` from [Filez4Eva](https://github.com/SteamWiz/Filez4Eva), which is built on this function.
+
 ### Extract structured data
 
 ```python
@@ -411,7 +394,7 @@ kwark:
 
 ### Model selection
 
-All AI commands (`chat`, `activate`, `doc`, `branch`, `commit`, `journal`, `transcribe`, `extract`) accept a `--model` (`-m`) option to designate the Anthropic model to use:
+All AI commands (`chat`, `activate`, `doc`, `branch`, `commit`, `journal`, `extract`) accept a `--model` (`-m`) option to designate the Anthropic model to use:
 
 ```bash
 git diff --staged | kwark commit --model claude-opus-4-5
@@ -426,14 +409,6 @@ kwark:
 ```
 
 The `--model` command line option takes precedence over the configuration file. If neither is specified, Kwark uses Claude Sonnet 5 (`claude-sonnet-5`). Use `kwark models` to list available model IDs.
-
-The `transcribe` command has its own setting and default. It uses `--model` first, then `transcribe: model:` (`kwark-transcribe-model`) from the configuration file, then Claude Opus 4.6 (`claude-opus-4-6`). It ignores the general `model` setting.
-
-```yaml
-kwark:
-  transcribe:
-    model: claude-opus-4-5
-```
 
 The `extract` command works the same way with its own setting and default: `--model` first, then `extract: model:` (`kwark-extract-model`) from the configuration file, then Claude Haiku 4.5 (`claude-haiku-4-5`). It also ignores the general `model` setting.
 
